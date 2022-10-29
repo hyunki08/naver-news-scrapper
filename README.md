@@ -7,7 +7,8 @@
 
 ### 사용법
 
-    go run main.go [query] [maxPage]
+    go run main.go [query] [maxPage] [async]
 
 - query : 검색어 입력
 - maxPage : 검색할 뉴스의 최대 페이지 (페이지당 최대 10개의 뉴스 포함)
+- async : optional. async 입력시 비동기로 크롤링 처리

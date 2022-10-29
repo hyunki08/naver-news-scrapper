@@ -20,6 +20,34 @@ type newsItem struct {
 	link      string
 }
 
+func AsyncScrapper(query string, maxPage int) {
+	var newsList []newsItem
+	c := make(chan []newsItem)
+
+	baseUrl := "https://search.naver.com/search.naver"
+	params := "?where=news&sm=tab_opt&sort=0&photo=3&field=0&pd=3&docid=&related=0&mynews=0&office_type=&office_section_code=&news_office_checked=&is_sug_officeid=0"
+	params += ("&query=" + url.QueryEscape(query))
+	now := time.Now()
+	params += ("&de=" + now.Format("2006.01.02"))
+	now = time.Now().AddDate(-5, 0, 0)
+	params += ("&ds=" + now.Format("2006.01.02"))
+
+	for i := 0; i < maxPage; i++ {
+		go asyncGetPage(baseUrl, params, i, c)
+	}
+
+	for i := 0; i < maxPage; i++ {
+		extractedNewsList := <-c
+		if len(extractedNewsList) < 10 {
+			continue
+		}
+		newsList = append(newsList, extractedNewsList...)
+	}
+
+	filename := writeCSV(newsList, query)
+	fmt.Println("검색을 종료합니다. " + strconv.Itoa(len(newsList)) + "개의 뉴스가 " + filename + " 에 저장되었습니다.")
+}
+
 func Scrapper(query string, maxPage int) {
 	var newsList []newsItem
 
@@ -63,6 +91,32 @@ func writeCSV(newsList []newsItem, query string) string {
 	}
 
 	return file.Name()
+}
+
+func asyncGetPage(baseUrl string, params string, page int, mainC chan<- []newsItem) {
+	var newsList []newsItem
+	c := make(chan newsItem)
+	params += ("&start=" + strconv.Itoa((page*10)+1))
+	baseUrl += params
+
+	res := getHttp(baseUrl)
+	defer res.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	checkErr(err)
+
+	newsListDoc := doc.Find(".list_news")
+	cards := newsListDoc.Find(".bx")
+	cards.Each(func(i int, card *goquery.Selection) {
+		go extractNews(card, c)
+	})
+
+	for i := 0; i < cards.Length(); i++ {
+		news := <-c
+		newsList = append(newsList, news)
+	}
+
+	mainC <- newsList
 }
 
 func getPage(baseUrl string, params string, page int) []newsItem {

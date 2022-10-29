@@ -21,7 +21,7 @@ func main() {
 	maxPage := 40
 	if len(args) == 1 {
 		fmt.Println("최대 40페이지까지 결과를 csv 파일에 출력합니다.")
-	} else if len(args) == 2 {
+	} else if len(args) >= 2 {
 		conv, err := strconv.Atoi(args[1])
 		if err != nil {
 			fmt.Println("최대 40페이지까지 결과를 csv 파일에 출력합니다.")
@@ -31,5 +31,9 @@ func main() {
 		}
 	}
 
-	scrapper.Scrapper(query, maxPage)
+	if args[2] == "async" {
+		scrapper.AsyncScrapper(query, maxPage)
+	} else {
+		scrapper.Scrapper(query, maxPage)
+	}
 }
