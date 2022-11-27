@@ -31,7 +31,7 @@ func main() {
 		}
 	}
 
-	if args[2] == "async" {
+	if len(args) > 2 && args[2] == "async" {
 		scrapper.AsyncScrapper(query, maxPage)
 	} else {
 		scrapper.Scrapper(query, maxPage)
